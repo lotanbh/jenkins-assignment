@@ -1,5 +1,5 @@
 const { execSync } = require('child_process');
-const http = require('http'); // שימוש ברכיב המובנה של Node.js - בלי תלויות!
+const http = require('http');
 
 function runCmd(cmd) {
     try {
@@ -9,7 +9,6 @@ function runCmd(cmd) {
     }
 }
 
-// פונקציית בדיקת בריאות המשתמשת ב-http המובנה
 function checkHealth(url) {
     return new Promise((resolve) => {
         http.get(url, (res) => {
@@ -42,6 +41,9 @@ async function waitForHealth(url, maxAttempts = 5) {
 async function deploy() {
     console.log("🚀 Starting Blue-Green Deployment process...");
 
+    // יצירת רשת פנימית משותפת אם היא לא קיימת (סעיף 1 במטלה)
+    runCmd('docker network create app-network');
+
     const isBlueActive = runCmd('docker ps --filter "name=web-blue" --format "{{.Names}}"').includes('web-blue');
     const currentEnv = isBlueActive ? 'blue' : 'green';
     const nextEnv = isBlueActive ? 'green' : 'blue';
@@ -53,19 +55,22 @@ async function deploy() {
     const nextWebPort = '4041';
     const buildNumber = process.env.BUILD_NUMBER || 'local';
 
-    console.log(`\n🐳 Step 1: Starting new containers (${nextEnv}) on test ports...`);
-    
-    // 1. הרמת מכולת ה-API הזמנית לבדיקה
-    runCmd(`docker run -d --name api-${nextEnv}-test -p ${nextApiPort}:4000 my-api:${buildNumber}`);
-    
-    // 2. הרמת מכולת ה-Web הזמנית עם קישור פנימי (--link) ל-API הזמני!
-    runCmd(`docker run -d --name web-${nextEnv}-test -p ${nextWebPort}:4040 --link api-${nextEnv}-test:api -e API_URL=http://api:4000 my-web:${buildNumber}`);
+    console.log(`\n🧹 Step 0: Cleaning up any leftover test containers...`);
+    runCmd(`docker rm -f api-${nextEnv}-test`);
+    runCmd(`docker rm -f web-${nextEnv}-test`);
 
-    console.log(`\n🧪 Step 2: Running Smoke Tests & Health Checks on temporary ports...`);
+    console.log(`\n🐳 Step 1: Starting new containers (${nextEnv}) on custom network...`);
     
-    // משנים את הכתובת כדי שג'נקינס שבתוך דוקר יוכל לגשת למחשב המארח ולבדוק את הפורטים החיצוניים
-    const apiHealthy = await waitForHealth(`http://docker.internal:${nextApiPort}/health`);
-    const webHealthy = await waitForHealth(`http://docker.internal:${nextWebPort}/health`);
+    // הרמת ה-API וה-Web על הרשת המשותפת שלנו ללא שימוש ב-links מיושנים
+    runCmd(`docker run -d --name api-${nextEnv}-test --network app-network -p ${nextApiPort}:4000 my-api:${buildNumber}`);
+    runCmd(`docker run -d --name web-${nextEnv}-test --network app-network -p ${nextWebPort}:4040 -e API_URL=http://api-${nextEnv}-test:4000 my-web:${buildNumber}`);
+
+    console.log(`\n🧪 Step 2: Running Smoke Tests & Health Checks...`);
+    
+    // בדיקת הבריאות המדויקת דרך המחשב המארח - עם קידומת host חובה!
+    const apiHealthy = await waitForHealth(`http://host.docker.internal:${nextApiPort}/health`);
+    const webHealthy = await waitForHealth(`http://host.docker.internal:${nextWebPort}/health`);
+
 
     if (!apiHealthy || !webHealthy) {
         console.error(`\n🚨 Health check FAILED for the new ${nextEnv} deployment!`);
@@ -77,21 +82,21 @@ async function deploy() {
 
     console.log(`\n🔄 Step 3: Health checks passed! Routing traffic smoothly...`);
     
-    // ניקוי מכולות הטסט הזמניות לפני הרמת המכולות הראשיות בפורטים הסופיים
+    // ניקוי מכולות הבדיקה
     runCmd(`docker rm -f web-${nextEnv}-test`);
     runCmd(`docker rm -f api-${nextEnv}-test`);
 
-    // הרמת המכולות הסופיות והרשמיות בפורטים הראשיים של הייצור (4000 ו-4040)
-    runCmd(`docker run -d --name api-${nextEnv} -p 4000:4000 my-api:${buildNumber}`);
-    runCmd(`docker run -d --name web-${nextEnv} -p 4040:4040 --link api-${nextEnv}:api -e API_URL=http://api:4000 my-web:${buildNumber}`);
+    // ניקוי מכולות ייצור ישנות אם נתקעו בשם זהה
+    runCmd(`docker rm -f api-${nextEnv}`);
+    runCmd(`docker rm -f web-${nextEnv}`);
 
-    // כיבוי והסרת הסביבה הישנה רק לאחר שהחדשה רצה בפורטים הראשיים
-    const oldApiExists = runCmd(`docker ps -a --filter "name=api-${currentEnv}" --format "{{.Names}}"`);
-    if (oldApiExists) {
-        console.log(`🧹 Cleaning up old environment [${currentEnv.toUpperCase()}]...`);
-        runCmd(`docker rm -f web-${currentEnv}`);
-        runCmd(`docker rm -f api-${currentEnv}`);
-    }
+    // הרמת מכולות הייצור הסופיות בפורטים הרשמיים
+    runCmd(`docker run -d --name api-${nextEnv} --network app-network -p 4000:4000 my-api:${buildNumber}`);
+    runCmd(`docker run -d --name web-${nextEnv} --network app-network -p 4040:4040 -e API_URL=http://api-${nextEnv}:4000 my-web:${buildNumber}`);
+
+    console.log(`🧹 Cleaning up old environment [${currentEnv.toUpperCase()}]...`);
+    runCmd(`docker rm -f web-${currentEnv}`);
+    runCmd(`docker rm -f api-${currentEnv}`);
 
     console.log(`\n🎉 Success! Deployment to [${nextEnv.toUpperCase()}] finished with Zero Downtime!`);
     process.exit(0);
