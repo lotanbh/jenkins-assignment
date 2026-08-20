@@ -54,15 +54,18 @@ async function deploy() {
     const buildNumber = process.env.BUILD_NUMBER || 'local';
 
     console.log(`\n🐳 Step 1: Starting new containers (${nextEnv}) on test ports...`);
+    
+    // 1. הרמת מכולת ה-API הזמנית לבדיקה
     runCmd(`docker run -d --name api-${nextEnv}-test -p ${nextApiPort}:4000 my-api:${buildNumber}`);
-    runCmd(`docker run -d --name web-${nextEnv}-test -p ${nextWebPort}:4040 -e API_URL=http://localhost:${nextApiPort} my-web:${buildNumber}`);
+    
+    // 2. הרמת מכולת ה-Web הזמנית עם קישור פנימי (--link) ל-API הזמני!
+    runCmd(`docker run -d --name web-${nextEnv}-test -p ${nextWebPort}:4040 --link api-${nextEnv}-test:api -e API_URL=http://api:4000 my-web:${buildNumber}`);
 
     console.log(`\n🧪 Step 2: Running Smoke Tests & Health Checks on temporary ports...`);
-    // משנים את הכתובת כדי שג'נקינס שבתוך דוקר יוכל לגשת למחשב המארח
-    const apiHealthy = await waitForHealth(`http://host.docker.internal:${nextApiPort}/health`);
-    const webHealthy = await waitForHealth(`http://host.docker.internal:${nextWebPort}/health`);
-
-
+    
+    // משנים את הכתובת כדי שג'נקינס שבתוך דוקר יוכל לגשת למחשב המארח ולבדוק את הפורטים החיצוניים
+    const apiHealthy = await waitForHealth(`http://docker.internal:${nextApiPort}/health`);
+    const webHealthy = await waitForHealth(`http://docker.internal:${nextWebPort}/health`);
 
     if (!apiHealthy || !webHealthy) {
         console.error(`\n🚨 Health check FAILED for the new ${nextEnv} deployment!`);
@@ -73,12 +76,16 @@ async function deploy() {
     }
 
     console.log(`\n🔄 Step 3: Health checks passed! Routing traffic smoothly...`);
+    
+    // ניקוי מכולות הטסט הזמניות לפני הרמת המכולות הראשיות בפורטים הסופיים
     runCmd(`docker rm -f web-${nextEnv}-test`);
     runCmd(`docker rm -f api-${nextEnv}-test`);
 
+    // הרמת המכולות הסופיות והרשמיות בפורטים הראשיים של הייצור (4000 ו-4040)
     runCmd(`docker run -d --name api-${nextEnv} -p 4000:4000 my-api:${buildNumber}`);
     runCmd(`docker run -d --name web-${nextEnv} -p 4040:4040 --link api-${nextEnv}:api -e API_URL=http://api:4000 my-web:${buildNumber}`);
 
+    // כיבוי והסרת הסביבה הישנה רק לאחר שהחדשה רצה בפורטים הראשיים
     const oldApiExists = runCmd(`docker ps -a --filter "name=api-${currentEnv}" --format "{{.Names}}"`);
     if (oldApiExists) {
         console.log(`🧹 Cleaning up old environment [${currentEnv.toUpperCase()}]...`);
