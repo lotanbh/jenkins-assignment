@@ -41,7 +41,7 @@ async function waitForHealth(url, maxAttempts = 5) {
 async function deploy() {
     console.log("🚀 Starting Blue-Green Deployment process...");
 
-    // יצירת רשת פנימית משותפת אם היא לא קיימת (סעיף 1 במטלה)
+    // יצירת רשת פנימית משותפת אם היא לא קיימת
     runCmd('docker network create app-network');
 
     const isBlueActive = runCmd('docker ps --filter "name=web-blue" --format "{{.Names}}"').includes('web-blue');
@@ -61,13 +61,13 @@ async function deploy() {
 
     console.log(`\n🐳 Step 1: Starting new containers (${nextEnv}) on custom network...`);
     
-    // הרמת ה-API וה-Web על הרשת המשותפת שלנו ללא שימוש ב-links מיושנים
+    // הרמת ה-API וה-Web על הרשת המשותפת (מזריקים פורט מפורש לתוך המכולה של ה-Web)
     runCmd(`docker run -d --name api-${nextEnv}-test --network app-network -p ${nextApiPort}:4000 my-api:${buildNumber}`);
-    runCmd(`docker run -d --name web-${nextEnv}-test --network app-network -p ${nextWebPort}:4040 -e API_URL=http://api-${nextEnv}-test:4000 my-web:${buildNumber}`);
+    runCmd(`docker run -d --name web-${nextEnv}-test --network app-network -p ${nextWebPort}:4040 -e PORT=4040 -e API_URL=http://api-${nextEnv}-test:4000 my-web:${buildNumber}`);
 
     console.log(`\n🧪 Step 2: Running Smoke Tests & Health Checks...`);
     
-    // בדיקת הבריאות המדויקת דרך המחשב המארח - עם קידומת host חובה!
+    // בדיקת הבריאות המדויקת דרך המחשב המארח - חובה להשתמש ב-host.docker.internal!
     const apiHealthy = await waitForHealth(`http://host.docker.internal:${nextApiPort}/health`);
     const webHealthy = await waitForHealth(`http://host.docker.internal:${nextWebPort}/health`);
 
@@ -90,9 +90,9 @@ async function deploy() {
     runCmd(`docker rm -f api-${nextEnv}`);
     runCmd(`docker rm -f web-${nextEnv}`);
 
-    // הרמת מכולות הייצור הסופיות בפורטים הרשמיים
+    // הרמת מכולות הייצור הסופיות בפורטים הרשמיים והקבועים של האתר
     runCmd(`docker run -d --name api-${nextEnv} --network app-network -p 4000:4000 my-api:${buildNumber}`);
-    runCmd(`docker run -d --name web-${nextEnv} --network app-network -p 4040:4040 -e API_URL=http://api-${nextEnv}:4000 my-web:${buildNumber}`);
+    runCmd(`docker run -d --name web-${nextEnv} --network app-network -p 4040:4040 -e PORT=4040 -e API_URL=http://api-${nextEnv}:4000 my-web:${buildNumber}`);
 
     console.log(`🧹 Cleaning up old environment [${currentEnv.toUpperCase()}]...`);
     runCmd(`docker rm -f web-${currentEnv}`);
