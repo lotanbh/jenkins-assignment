@@ -52,7 +52,10 @@ pipeline {
         // שלב 3: העלאה לאוויר - יתבצע אך ורק בענף main!
         stage('Deploy (Blue-Green)') {
             when {
-                branch 'main' // התנאי שמגביל את השלב הזה לענף המרכזי בלבד
+                expression { 
+                    // עוקף את הבאג של ג'נקינס ובודק את כל השמות האפשריים לענף
+                    return env.GIT_BRANCH == 'origin/main' || env.GIT_BRANCH == 'main' || env.BRANCH_NAME == 'main'
+                }
             }
             steps {
                 echo 'Executing Blue-Green Deployment on main branch...'
