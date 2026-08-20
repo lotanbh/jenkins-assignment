@@ -24,7 +24,7 @@
             try {
                 excuseText.innerText = "Fetching a fresh excuse...";
                 // פנייה לנתיב פנימי בשרת ה-web שלנו, שישמש כמתווך (Proxy) ל-API
-                const res = await fetch('/api/excuse');
+                const res = await fetch('/api/excuses');
                 const data = await res.json();
                 
                 if (data.error) {

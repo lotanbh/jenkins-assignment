@@ -9,7 +9,7 @@ const API_URL = process.env.API_URL || 'http://localhost:4000'; // כתובת ה
 
 app.use(express.static(path.join(__dirname, '../public'))); // הגדרת ספריית הקבצים הסטטיים
 
-app.get('/api/excuse', async (req, res) => {
+app.get('/api/excuses', async (req, res) => {
   try {
     const response = await axios.get(`${API_URL}/api/data`); // בקשה לנתיב /api/data של ה-API
     res.json({
