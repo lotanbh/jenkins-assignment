@@ -59,8 +59,9 @@ async function deploy() {
 
     console.log(`\n🧪 Step 2: Running Smoke Tests & Health Checks on temporary ports...`);
     // משנים את הכתובת כדי שג'נקינס שבתוך דוקר יוכל לגשת למחשב המארח
-    const apiHealthy = await waitForHealth(`http://docker.internal:${nextApiPort}/health`);
-    const webHealthy = await waitForHealth(`http://docker.internal:${nextWebPort}/health`);
+    const apiHealthy = await waitForHealth(`http://host.docker.internal:${nextApiPort}/health`);
+    const webHealthy = await waitForHealth(`http://host.docker.internal:${nextWebPort}/health`);
+
 
 
     if (!apiHealthy || !webHealthy) {
