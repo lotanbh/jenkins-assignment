@@ -21,7 +21,7 @@ describe('Web Service & Integration Tests', () => {
             data: { message: "Fake DevOps Excuse", status: "authenticated" }
         });
 
-        const res = await request(app).get('/api/excuse');
+        const res = await request(app).get('/api/excuses');
         expect(res.statusCode).toEqual(200);
         expect(res.body).toHaveProperty('message', 'Fake DevOps Excuse');
     });
@@ -31,7 +31,7 @@ describe('Web Service & Integration Tests', () => {
         // מזייפים כשל פנייה ל-API
         axios.get.mockRejectedValue(new Error('API Down'));
 
-        const res = await request(app).get('/api/excuse');
+        const res = await request(app).get('/api/excuses');
         expect(res.statusCode).toEqual(500);
         expect(res.body).toHaveProperty('error');
     });

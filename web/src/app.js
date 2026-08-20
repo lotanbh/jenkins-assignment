@@ -15,8 +15,7 @@ app.get('/api/excuses', async (req, res) => {
     res.json({
         message: response.data.message,
         apiStatus: response.data.status,
-        weBuild: BUILD_NUMBER,
-
+        webBuild: BUILD_NUMBER,
     });
   } catch (error) {
     // מבחן החבלה -   טיפול בשגיאות במקרה שהבקשה ל-API נכשלת 
