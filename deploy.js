@@ -58,8 +58,10 @@ async function deploy() {
     runCmd(`docker run -d --name web-${nextEnv}-test -p ${nextWebPort}:4040 -e API_URL=http://localhost:${nextApiPort} my-web:${buildNumber}`);
 
     console.log(`\n🧪 Step 2: Running Smoke Tests & Health Checks on temporary ports...`);
-    const apiHealthy = await waitForHealth(`http://localhost:${nextApiPort}/health`);
-    const webHealthy = await waitForHealth(`http://localhost:${nextWebPort}/health`);
+    // משנים את הכתובת כדי שג'נקינס שבתוך דוקר יוכל לגשת למחשב המארח
+    const apiHealthy = await waitForHealth(`http://docker.internal:${nextApiPort}/health`);
+    const webHealthy = await waitForHealth(`http://docker.internal:${nextWebPort}/health`);
+
 
     if (!apiHealthy || !webHealthy) {
         console.error(`\n🚨 Health check FAILED for the new ${nextEnv} deployment!`);
