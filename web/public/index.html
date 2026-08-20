@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DevOps Excuse Generator</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="card">
+        <h1>🛠️ DevOps Excuse Generator</h1>
+        <p>Current system status requires an excuse:</p>
+        <div class="excuse" id="excuse-text">Loading excuse...</div>
+        <button id="gen-btn">Generate Another Excuse</button>
+        <div class="footer" id="footer-text">Fetching build info...</div>
+    </div>
+
+    <script>
+        const excuseText = document.getElementById('excuse-text');
+        const footerText = document.getElementById('footer-text');
+        const genBtn = document.getElementById('gen-btn');
+
+        async function fetchExcuse() {
+            try {
+                excuseText.innerText = "Fetching a fresh excuse...";
+                // פנייה לנתיב פנימי בשרת ה-web שלנו, שישמש כמתווך (Proxy) ל-API
+                const res = await fetch('/api/excuse');
+                const data = await res.json();
+                
+                if (data.error) {
+                    excuseText.innerHTML = `<span style="color: #e74c3c;">🚨 ${data.error}</span>`;
+                } else {
+                    excuseText.innerText = `"${data.message}"`;
+                    footerText.innerText = `Web Build: ${data.webBuild} | API Status: ${data.apiStatus}`;
+                }
+            } catch (err) {
+                excuseText.innerText = "🚨 Failed to connect to Web Server";
+            }
+        }
+
+        // הפעלה ראשונית בטעינת הדף, וחיבור הכפתור
+        window.addEventListener('DOMContentLoaded', fetchExcuse);
+        genBtn.addEventListener('click', fetchExcuse);
+    </script>
+</body>
+</html>
