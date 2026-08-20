@@ -56,8 +56,8 @@ pipeline {
             }
             steps {
                 echo 'Executing Blue-Green Deployment on main branch...'
-                // כאן נכתוב בהמשך את לוגיקת הכחול-ירוק המורכבת
-                sh 'echo "Deployment successful!"'
+                // הרצת סקריפט ה-Deploy החכם שלנו
+                sh 'node deploy.js'
             }
         }
     }
