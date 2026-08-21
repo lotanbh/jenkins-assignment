@@ -39,12 +39,12 @@ pipeline {
                 
                 // בניית ה-API עם הזרקת ה-Build Args (סעיף 2 במטלה)
                 dir('api') {
-                    sh "docker build --build-arg BUILD_NUMBER=${BUILD_NUMBER} --build-arg COMMIT_SHA=${SHORT_COMMIT} -t my-api:${BUILD_NUMBER} ."
+                    sh "docker build --no-cache --build-arg BUILD_NUMBER=${BUILD_NUMBER} --build-arg COMMIT_SHA=${SHORT_COMMIT} -t my-api:${BUILD_NUMBER} ."
                 }
                 
                 // בניית ה-Web עם הזרקת ה-Build Args
                 dir('web') {
-                    sh "docker build --build-arg BUILD_NUMBER=${BUILD_NUMBER} --build-arg COMMIT_SHA=${SHORT_COMMIT} -t my-web:${BUILD_NUMBER} ."
+                    sh "docker build --no-cache --build-arg BUILD_NUMBER=${BUILD_NUMBER} --build-arg COMMIT_SHA=${SHORT_COMMIT} -t my-web:${BUILD_NUMBER} ."
                 }
             }
         }
