@@ -26,21 +26,15 @@ app.get('/api/excuses', async (req, res) => {
   } 
 });
 
-// app.get('/health', (req, res) => {
-//   res.json({ 
-//     status: 'ok', 
-//     build: BUILD_NUMBER, 
-//     commit: COMMIT_SHA 
-//   });
-// });
-
 app.get('/health', (req, res) => {
-  // חבלה מכוונת לצורך בדיקת ה-Rollback ב-deploy.js
-  res.status(500).json({ 
-    status: 'error', 
-    message: 'Mishap simulated for testing rollback mechanism' 
+  res.json({ 
+    status: 'ok', 
+    build: BUILD_NUMBER, 
+    commit: COMMIT_SHA 
   });
 });
+
+
 
 
 module.exports = app;
