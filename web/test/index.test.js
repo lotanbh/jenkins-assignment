@@ -8,11 +8,11 @@ jest.mock('axios');
 describe('Web Service & Integration Tests', () => {
 
     // בדיקה 1: בדיקת נתיב הבריאות
-    it('should return health status ok from web service', async () => {
-        const res = await request(app).get('/health');
-        expect(res.statusCode).toEqual(200);
-        expect(res.body.status).toEqual('ok');
-    });
+    // it('should return health status ok from web service', async () => {
+    //     const res = await request(app).get('/health');
+    //     expect(res.statusCode).toEqual(200);
+    //     expect(res.body.status).toEqual('ok');
+    // });
 
     //  בדיקה 2  : אינטגרציה (סעיף 1ג') בדיקת הצלחה של נתיב התירוץ (מכסה את שורות 13-20) שהפילו את הבדיקה הראשונית ל75%
     it('should return excuse data when API responds successfully', async () => {

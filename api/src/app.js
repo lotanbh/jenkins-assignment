@@ -32,32 +32,7 @@ app.get('/health', (req, res) => {
     });
 });
 
-// ====== חבלה מכוונת לצורך מבחן הכיסוי (מבחן החבלה) ======
-app.get('/api/dead-route-1', (req, res) => {
-    const data = "test";
-    if (data === "ready") {
-        console.log("Not covered");
-    } else {
-        console.log("Still not covered");
-    }
-    res.json({ message: 'Dead code 1' });
-});
 
-app.get('/api/dead-route-2', (req, res) => {
-    try {
-        for (let i = 0; i < 10; i++) {
-            console.log("Looping through uncovered code: " + i);
-        }
-    } catch (e) {
-        console.error(e);
-    }
-    res.json({ message: 'Dead code 2' });
-});
-
-app.get('/api/dead-route-3', (req, res) => {
-    res.json({ message: 'Dead code 3' });
-});
-// ========================================================
 
 
 module.exports = app;
