@@ -43,11 +43,12 @@ async function deploy() {
     for (let i = 1; i <= 5; i++) {
         console.log(`Checking health inside network (Attempt ${i}/5)...`);
         try {
-            // פקודת curl קטנה ישירות מול שם המכולה הפנימי והפורט הפנימי 4040
-            runCmd(`docker run --rm --network app-network curlimages/curl:latest -s --fail http://web-${nextEnv}-test:4040/health`);
+            // שינוי קריטי: משתמשים ב-execSync ישירות ולא ב-runCmd, כדי שהשגיאה לא תיבלע!
+            execSync(`docker run --rm --network app-network curlimages/curl:latest -s --fail http://web-${nextEnv}-test:4040/health`);
             isHealthy = true;
             break;
         } catch (err) {
+            console.log(`   ⚠️ Attempt ${i} failed. Service not ready or returned error.`);
             // המתן 2 שניות לפני הניסיון הבא
             runCmd('node -e "setTimeout(() => {}, 2000)"');
         }
